@@ -49,29 +49,39 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-blue-100 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-royal-900 via-royal-800 to-slate-900 flex items-center justify-center px-4 py-12" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      
+      {/* إطار البطاقة الملكي */}
+      <div className="max-w-md w-full bg-white/95 backdrop-blur-md p-8 rounded-3xl shadow-royal border border-gold/40 space-y-6 relative overflow-hidden">
         
-        {/* زر تبديل اللغة في الأعلى */}
-        <div className="flex justify-between items-center border-b pb-4">
-          <span className="text-xs font-bold text-slate-500 uppercase">Language / اللغة</span>
+        {/* زخرفة بصرية علوية بخط ذهبي خفيف */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-gold-dark via-gold to-gold-light"></div>
+
+        {/* شريط تبديل اللغات */}
+        <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-gold"></span>
+            <span className="text-xs font-bold text-royal-800 uppercase tracking-wider">مقرأة الإمام الجزري</span>
+          </div>
           <Switch currentLang={lang} setLang={setLang} />
         </div>
 
+        {/* رأس العنوان */}
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold text-blue-950">{t.login}</h1>
-          <p className="text-slate-600 text-sm">{t.title}</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-royal-900">{t.login}</h1>
+          <p className="text-slate-600 text-xs md:text-sm font-medium leading-relaxed">{t.title}</p>
         </div>
 
         {errorMsg && (
-          <div className="bg-rose-50 text-rose-700 p-3 rounded-lg text-sm border border-rose-200 text-center">
+          <div className="bg-rose-50 text-rose-700 p-3 rounded-xl text-sm border border-rose-200 text-center font-medium">
             {errorMsg}
           </div>
         )}
 
+        {/* نموذج الدخول */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-bold text-royal-800 mb-1.5 uppercase">
               {lang === 'ar' ? 'البريد الإلكتروني' : 'ኢሜይል'}
             </label>
             <input
@@ -79,13 +89,13 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-900 outline-none text-slate-900"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-gold focus:border-royal-800 outline-none text-slate-900 text-sm transition-all"
               placeholder="name@example.com"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label className="block text-xs font-bold text-royal-800 mb-1.5 uppercase">
               {lang === 'ar' ? 'كلمة المرور' : 'የሚስጥር ቁጥር (Password)'}
             </label>
             <input
@@ -93,7 +103,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-900 outline-none text-slate-900"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-gold focus:border-royal-800 outline-none text-slate-900 text-sm transition-all"
               placeholder="••••••••"
             />
           </div>
@@ -101,16 +111,17 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-2.5 rounded-lg transition-colors shadow-sm disabled:opacity-50"
+            className="w-full bg-royal-800 hover:bg-royal-900 text-gold-light hover:text-white font-bold py-3.5 rounded-xl transition-all shadow-royal border border-gold/30 disabled:opacity-50 text-sm tracking-wide"
           >
             {loading ? (lang === 'ar' ? 'جاري تسجيل الدخول...' : 'በመግባት ላይ...') : t.login}
           </button>
         </form>
 
-        <div className="text-center pt-2">
-          <p className="text-sm text-slate-600">
+        {/* رابط التسجيل */}
+        <div className="text-center pt-2 border-t border-slate-100">
+          <p className="text-xs text-slate-600 font-medium">
             {lang === 'ar' ? 'ليس لديك حساب بعد؟' : 'አካውንት የለህም?'} {' '}
-            <a href="/register" className="text-amber-600 font-semibold hover:underline">
+            <a href="/register" className="text-gold-dark hover:text-gold font-bold underline underline-offset-4">
               {t.register}
             </a>
           </p>
