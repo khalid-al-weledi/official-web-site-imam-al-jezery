@@ -1,97 +1,104 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function StudentDashboard() {
-  // بيانات تجريبية لحساب الطالب الرصيد والجلسات
-  const [studentData, setStudentData] = useState({
-    name: 'عبدالله أحمد إبراهيم',
-    remainingMinutes: 180,
-    activePackage: 'باقة 300 دقيقة',
-    membershipStatus: 'نشط ومنتظم',
-  });
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  const sessionsHistory = [
-    { id: 's-1', teacher: 'الشيخ إبراهيم محمد', date: '2026-10-10', duration: 30, status: 'مكتملة' },
-    { id: 's-2', teacher: 'الشيخ محمد الأمين', date: '2026-10-07', duration: 45, status: 'مكتملة' },
-  ];
+  useEffect(() => {
+    async function checkUser() {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        // إذا لم يكن المستخدم مسجل الدخول، يتم توجيهه لصفحة الدخول
+        router.push('/login');
+      } else {
+        setUser(session.user);
+      }
+      setLoading(false);
+    }
+
+    checkUser();
+  }, [router]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-slate-600 text-lg">جاري تحميل لوحة التحكم...</p>
+      </div>
+    );
+  }
+
+  const metadata = user?.user_metadata || {};
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-      {/* رأس لوحة الطالب */}
-      <div className="bg-gradient-to-r from-blue-900 to-blue-950 text-white p-8 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-center gap-6 border border-amber-500/30">
-        <div className="space-y-2 text-center md:text-right">
-          <h1 className="text-3xl font-bold text-amber-400">أهلاً بك، {studentData.name}</h1>
-          <p className="text-slate-200 text-sm">تابع رصيد دقائقك، جدول جلساتك، واشحن باقتك بكل سهولة</p>
-        </div>
-        <div className="bg-amber-500 text-blue-950 px-6 py-4 rounded-xl shadow-md text-center">
-          <div className="text-xs font-semibold">الرصيد المتبقي</div>
-          <div className="text-3xl font-extrabold">{studentData.remainingMinutes} دقيقة</div>
-        </div>
-      </div>
-
-      {/* معلومات الباقة والحساب */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-2">
-          <h3 className="text-sm font-medium text-slate-500">الباقة الحالية</h3>
-          <p className="text-xl font-bold text-blue-900">{studentData.activePackage}</p>
-          <a href="/register" className="inline-block text-xs text-amber-600 font-semibold hover:underline pt-2">
-            ترقية أو شحن باقة جديدة ⚡
-          </a>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-2">
-          <h3 className="text-sm font-medium text-slate-500">حالة الحساب</h3>
-          <p className="text-xl font-bold text-emerald-600">{studentData.membershipStatus}</p>
-          <span className="inline-block text-xs text-slate-400 pt-2">حساب مؤهل للإقراء والإجازة</span>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-2">
-          <h3 className="text-sm font-medium text-slate-500">حجز جلسة جديدة</h3>
-          <p className="text-xl font-bold text-blue-950">اختر المعلم والموعد</p>
-          <button 
-            onClick={() => alert('سيتم توجيهك لصفحة اختيار الموعد المتاحة مع المعلمين.')}
-            className="mt-2 bg-blue-900 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-blue-800 transition-colors"
+    <div className="min-h-screen bg-slate-50 p-6 md:p-10" dir="rtl">
+      <div className="max-w-6xl mx-auto space-y-8">
+        
+        {/* رأس الصفحة / الترحيب */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-blue-950">
+              أهلاً بك، {metadata.full_name || 'طالب القرآن'} 🌟
+            </h1>
+            <p className="text-slate-600 text-sm mt-1">
+              مقرأة الإمام الجزري للإقراء والإجازة بالسند — لوحة تحكم الطالب
+            </p>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="bg-rose-50 text-rose-700 hover:bg-rose-100 font-semibold px-4 py-2 rounded-lg text-sm transition-colors border border-rose-200"
           >
-            احجز الآن 📅
+            تسجيل الخروج
           </button>
         </div>
-      </div>
 
-      {/* جدول الجلسات السابقة */}
-      <div className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200">
-        <div className="p-6 border-b border-slate-100">
-          <h2 className="text-lg font-bold text-blue-900">سجل الجلسات القرآنية السابقة</h2>
+        {/* إحصائيات سريعة أو تفاصيل البرنامج */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-2">
+            <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">البرنامج الحالي</span>
+            <h3 className="text-lg font-bold text-slate-900">{metadata.program_id || 'برنامج التلقين'}</h3>
+            <p className="text-sm text-slate-500">مستوى القراءة: {metadata.reading_level || 'مبتدئ'}</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-2">
+            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">حالة الحفظ</span>
+            <h3 className="text-lg font-bold text-slate-900">{metadata.memorization_state || 'لم يحفظ'}</h3>
+            <p className="text-sm text-slate-500">الأجزاء المحفوظة: {metadata.memorized_parts || 0} أجزاء</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-2">
+            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">الجلسات القادمة</span>
+            <h3 className="text-lg font-bold text-slate-900">لا توجد جلسات محجوزة</h3>
+            <p className="text-sm text-slate-500">احجز جلستك الأولى مع المعلم الآن</p>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-700 text-sm border-b">
-                <th className="p-4">رقم الجلسة</th>
-                <th className="p-4">المعلم المقرئ</th>
-                <th className="p-4">التاريخ</th>
-                <th className="p-4">المدة المستهلكة</th>
-                <th className="p-4">الحالة</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {sessionsHistory.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="p-4 font-medium text-slate-900">{item.id}</td>
-                  <td className="p-4 text-slate-800 font-semibold">{item.teacher}</td>
-                  <td className="p-4 text-slate-700">{item.date}</td>
-                  <td className="p-4 text-blue-900 font-medium">{item.duration} دقيقة</td>
-                  <td className="p-4">
-                    <span className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-semibold">
-                      {item.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* حجز الجلسات أو الروابط السريعة */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <h2 className="text-xl font-bold text-blue-950 border-b pb-3">إدارة الإقراء وجلسات السماع</h2>
+          <p className="text-slate-600 text-sm">
+            يمكنك التواصل مع المعلمين المختصين وبدء جلسات التلقين وتصحيح التلاوة وفق الأوقات المتاحة.
+          </p>
+          <div className="flex gap-4 pt-2">
+            <button 
+              onClick={() => alert('قريباً: نافذة حجز جلسة جديدة مع المعلم!')}
+              className="bg-blue-900 hover:bg-blue-800 text-white font-medium px-5 py-2.5 rounded-lg text-sm transition-colors shadow-sm"
+            >
+              📅 حجز جلسة إقراء جديدة
+            </button>
+          </div>
         </div>
+
       </div>
     </div>
   );
