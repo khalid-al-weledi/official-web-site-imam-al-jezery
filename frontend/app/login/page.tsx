@@ -1,10 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { dictionary, Language } from '@/lib/dictionary';
+import Switch from '@/components/Switch';
 
 export default function LoginPage() {
+  const [lang, setLang] = useState<Language>('ar');
+  const t = dictionary[lang];
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,21 +33,34 @@ export default function LoginPage() {
         return;
       }
 
-      alert('تم تسجيل الدخول بنجاح!');
-      router.push('/student/dashboard'); // توجيه الطالب للوحة التحكم الخاصة به
+      const role = data.user?.user_metadata?.role || 'student';
+
+      if (role === 'teacher') {
+        router.push('/teacher/dashboard');
+      } else if (role === 'accountant') {
+        router.push('/accountant/dashboard');
+      } else {
+        router.push('/student/dashboard');
+      }
     } catch (err: any) {
-      setErrorMsg('حدث خطأ غير متوقع أثناء تسجيل الدخول.');
-    } finally {
+      setErrorMsg(lang === 'ar' ? 'حدث خطأ غير متوقع أثناء تسجيل الدخول.' : 'በግባ ጊዜ ያልተጠበቀ ስህተት ተከስቷል።');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-blue-100 space-y-6">
+        
+        {/* زر تبديل اللغة في الأعلى */}
+        <div className="flex justify-between items-center border-b pb-4">
+          <span className="text-xs font-bold text-slate-500 uppercase">Language / اللغة</span>
+          <Switch currentLang={lang} setLang={setLang} />
+        </div>
+
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-extrabold text-blue-950">تسجيل الدخول للمقرأة</h2>
-          <p className="text-sm text-slate-600">أدخل بريدك الإلكتروني وكلمة المرور للوصول إلى حسابك</p>
+          <h1 className="text-2xl font-bold text-blue-950">{t.login}</h1>
+          <p className="text-slate-600 text-sm">{t.title}</p>
         </div>
 
         {errorMsg && (
@@ -51,42 +69,53 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">البريد الإلكتروني</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-none text-slate-900"
-                placeholder="name@example.com"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">كلمة المرور</label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-none text-slate-900"
-                placeholder="••••••••"
-              />
-            </div>
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              {lang === 'ar' ? 'البريد الإلكتروني' : 'ኢሜይል'}
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-900 outline-none text-slate-900"
+              placeholder="name@example.com"
+            />
           </div>
 
           <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-900 hover:bg-blue-800 focus:outline-none transition-colors disabled:opacity-50"
-            >
-              {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
-            </button>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              {lang === 'ar' ? 'كلمة المرور' : 'የሚስጥር ቁጥር (Password)'}
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-900 outline-none text-slate-900"
+              placeholder="••••••••"
+            />
           </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-2.5 rounded-lg transition-colors shadow-sm disabled:opacity-50"
+          >
+            {loading ? (lang === 'ar' ? 'جاري تسجيل الدخول...' : 'በመግባት ላይ...') : t.login}
+          </button>
         </form>
+
+        <div className="text-center pt-2">
+          <p className="text-sm text-slate-600">
+            {lang === 'ar' ? 'ليس لديك حساب بعد؟' : 'አካውንት የለህም?'} {' '}
+            <a href="/register" className="text-amber-600 font-semibold hover:underline">
+              {t.register}
+            </a>
+          </p>
+        </div>
+
       </div>
     </div>
   );
