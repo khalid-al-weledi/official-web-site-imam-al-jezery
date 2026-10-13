@@ -1,0 +1,283 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum RoleType {
+  VISITOR
+  STUDENT
+  TEACHER
+  ACCOUNTANT
+  MANAGER
+  ADMIN
+}
+
+enum EnrollmentStatus {
+  PENDING
+  UNDER_REVIEW
+  ACCEPTED
+  NEEDS_COMPLETION
+  REJECTED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  CONFIRMED
+  STARTED
+  COMPLETED
+  ABSENT
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LedgerType {
+  WELCOME_BONUS
+  PACKAGE_PURCHASE
+  SESSION_DEDUCTION
+  MANUAL_ADJUSTMENT
+  ADVANCE_SULFA
+  ADVANCE_REPAYMENT
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  passwordHash  String
+  fullName      String
+  phone         String
+  role          RoleType       @default(STUDENT)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  studentProfile Student?
+  teacherProfile Teacher?
+  auditLogs      AuditLog[]
+  notifications  Notification[]
+}
+
+model Student {
+  id                String            @id @default(uuid())
+  userId            String            @unique
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  age               Int
+  country           String
+  city              String
+  previousSchool    String?
+  previousTeacher   String?
+  readingLevel      String            // مبتدئ، متوسط، جيد جدًا، متقدم
+  canReadQuran      Boolean           // هل أتم قراءة القرآن نظرًا
+  memorizationState String            // لم يحفظ، حفظ أجزاء، نصف القرآن، القرآن كاملًا
+  memorizedParts    Int?              // عدد الأجزاء المحفوظة
+  hasPreviousIjazah Boolean           @default(false)
+  ijazahDetails     String?
+  currentBalanceMinutes Int           @default(0)
+  hasReceivedWelcomeBonus Boolean     @default(false)
+  sulfaBalanceMinutes   Int           @default(0)
+
+  enrollments       Enrollment[]
+  sessions          Session[]
+  payments          Payment[]
+  ledgerEntries     MinuteLedger[]
+  exams             ExamResult[]
+  progressRecords   ProgressRecord[]
+  certificates      Certificate[]
+}
+
+model Teacher {
+  id              String       @id @default(uuid())
+  userId          String       @unique
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio             String?
+  specialties     String[]     // القراءات والروايات التي يدرسها
+  availableHours  Json?        // الأيام وساعات التوفر
+
+  sessions        Session[]
+  exams           Exam[]
+}
+
+model Program {
+  id            String       @id @default(uuid())
+  titleAr       String
+  titleAm       String
+  descriptionAr String
+  descriptionAm String
+  pricePerMin   Int          @default(5) // 5 بر إثيوبي
+  durationWeeks Int?
+  capacity      Int?
+  isActive      Boolean      @default(true)
+
+  enrollments   Enrollment[]
+  sessions      Session[]
+}
+
+model Enrollment {
+  id           String           @id @default(uuid())
+  studentId    String
+  student      Student          @relation(fields: [studentId], references: [id])
+  programId    String
+  program      Program          @relation(fields: [programId], references: [id])
+  status       EnrollmentStatus @default(PENDING)
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model Package {
+  id          String   @id @default(uuid())
+  nameAr      String
+  nameAm      String
+  minutes     Int
+  price       Int      // السعر الإجمالي بالبر
+  discountPct Float    @default(0.0)
+  isActive    Boolean  @default(true)
+
+  payments    Payment[]
+}
+
+model Payment {
+  id             String        @id @default(uuid())
+  studentId      String
+  student        Student       @relation(fields: [studentId], references: [id])
+  packageId      String
+  package        Package       @relation(fields: [packageId], references: [id])
+  amountPaid     Int
+  receiptImage   String        // مسار الصورة المخزن بشكل آمن
+  status         PaymentStatus @default(PENDING)
+  verifiedById   String?
+  rejectionReason String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  ledgerEntries  MinuteLedger[]
+}
+
+model MinuteLedger {
+  id          String     @id @default(uuid())
+  studentId   String
+  student     Student    @relation(fields: [studentId], references: [id])
+  paymentId   String?    @unique
+  payment     Payment?   @relation(fields: [paymentId], references: [id])
+  minutes     Int        // موجبة للإضافة، سالبة للخصم
+  type        LedgerType
+  description String
+  createdAt   DateTime   @default(now())
+}
+
+model Session {
+  id             String        @id @default(uuid())
+  studentId      String
+  student        Student       @relation(fields: [studentId], references: [id])
+  teacherId      String
+  teacher        Teacher       @relation(fields: [teacherId], references: [id])
+  programId      String
+  program        Program       @relation(fields: [programId], references: [id])
+  scheduledAt    DateTime
+  durationMinutes Int          @default(30)
+  actualReadMinutes Int?       @default(0)
+  status         SessionStatus @default(SCHEDULED)
+  cancellationReason String?
+  createdAt      DateTime      @default(now())
+
+  attendance     Attendance?
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  sessionId String   @unique
+  session   Session  @relation(fields: [sessionId], references: [id])
+  attended  Boolean
+  notes     String?
+  recordedAt DateTime @default(now())
+}
+
+model Exam {
+  id          String       @id @default(uuid())
+  titleAr     String
+  titleAm     String
+  teacherId   String
+  teacher     Teacher      @relation(fields: [teacherId], references: [id])
+  scheduledAt DateTime
+  results     ExamResult[]
+}
+
+model ExamResult {
+  id        String   @id @default(uuid())
+  examId    String
+  exam      Exam     @relation(fields: [examId], references: [id])
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id])
+  grade     Float    // النسبة أو التقييم
+  passed    Boolean
+  feedback  String?
+  createdAt DateTime @default(now())
+}
+
+model ProgressRecord {
+  id             String   @id @default(uuid())
+  studentId      String
+  student        Student  @relation(fields: [studentId], references: [id])
+  currentSurahAr String
+  memorizedJuz   Int
+  reviewQuality  String   // ممتاز، جيد، يحتاج متابعة
+  recordedAt     DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  titleAr   String
+  titleAm   String
+  bodyAr    String
+  bodyAm    String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Certificate {
+  id           String   @id @default(uuid())
+  studentId    String
+  student      Student  @relation(fields: [studentId], references: [id])
+  titleAr      String
+  titleAm      String
+  sanadDetails String
+  verifyCode   String   @unique
+  issuedAt     DateTime @default(now())
+}
+
+model LibraryItem {
+  id            String   @id @default(uuid())
+  titleAr       String
+  titleAm       String
+  category      String   // كتاب، مصحف، متن، صوتيات
+  author        String?
+  fileUrl       String
+  isPublic      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  details   String
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  key         String   @id
+  value       String   // بيانات الإعدادات العامة بصيغة JSON أو نص
+  updatedAt   DateTime @updatedAt
+}
