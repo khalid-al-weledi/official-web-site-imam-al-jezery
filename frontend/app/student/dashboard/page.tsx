@@ -3,8 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { dictionary, Language } from '@/lib/dictionary';
+import Switch from '@/components/Switch';
 
 export default function StudentDashboard() {
+  const [lang, setLang] = useState<Language>('ar');
+  const t = dictionary[lang];
+
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -12,16 +17,13 @@ export default function StudentDashboard() {
   useEffect(() => {
     async function checkUser() {
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (!session) {
-        // إذا لم يكن المستخدم مسجل الدخول، يتم توجيهه لصفحة الدخول
         router.push('/login');
       } else {
         setUser(session.user);
       }
       setLoading(false);
     }
-
     checkUser();
   }, [router]);
 
@@ -33,7 +35,7 @@ export default function StudentDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-slate-600 text-lg">جاري تحميل لوحة التحكم...</p>
+        <p className="text-slate-600 text-lg">{lang === 'ar' ? 'جاري التحميل...' : 'በመጫን ላይ...'}</p>
       </div>
     );
   }
@@ -41,62 +43,56 @@ export default function StudentDashboard() {
   const metadata = user?.user_metadata || {};
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-10" dir="rtl">
+    <div className="min-h-screen bg-slate-50 p-6 md:p-10" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <div className="max-w-6xl mx-auto space-y-8">
         
-        {/* رأس الصفحة / الترحيب */}
+        {/* رأس الصفحة مع زر تبديل اللغة */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-blue-950">
-              أهلاً بك، {metadata.full_name || 'طالب القرآن'} 🌟
+              {t.welcome}, {metadata.full_name || (lang === 'ar' ? 'طالب القرآن' : 'ተማሪ')} 🌟
             </h1>
-            <p className="text-slate-600 text-sm mt-1">
-              مقرأة الإمام الجزري للإقراء والإجازة بالسند — لوحة تحكم الطالب
-            </p>
+            <p className="text-slate-600 text-sm mt-1">{t.title}</p>
           </div>
-          <button
-            onClick={handleLogout}
-            className="bg-rose-50 text-rose-700 hover:bg-rose-100 font-semibold px-4 py-2 rounded-lg text-sm transition-colors border border-rose-200"
-          >
-            تسجيل الخروج
-          </button>
-        </div>
-
-        {/* إحصائيات سريعة أو تفاصيل البرنامج */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-2">
-            <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">البرنامج الحالي</span>
-            <h3 className="text-lg font-bold text-slate-900">{metadata.program_id || 'برنامج التلقين'}</h3>
-            <p className="text-sm text-slate-500">مستوى القراءة: {metadata.reading_level || 'مبتدئ'}</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-2">
-            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">حالة الحفظ</span>
-            <h3 className="text-lg font-bold text-slate-900">{metadata.memorization_state || 'لم يحفظ'}</h3>
-            <p className="text-sm text-slate-500">الأجزاء المحفوظة: {metadata.memorized_parts || 0} أجزاء</p>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-2">
-            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">الجلسات القادمة</span>
-            <h3 className="text-lg font-bold text-slate-900">لا توجد جلسات محجوزة</h3>
-            <p className="text-sm text-slate-500">احجز جلستك الأولى مع المعلم الآن</p>
-          </div>
-        </div>
-
-        {/* حجز الجلسات أو الروابط السريعة */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-          <h2 className="text-xl font-bold text-blue-950 border-b pb-3">إدارة الإقراء وجلسات السماع</h2>
-          <p className="text-slate-600 text-sm">
-            يمكنك التواصل مع المعلمين المختصين وبدء جلسات التلقين وتصحيح التلاوة وفق الأوقات المتاحة.
-          </p>
-          <div className="flex gap-4 pt-2">
-            <button 
-              onClick={() => alert('قريباً: نافذة حجز جلسة جديدة مع المعلم!')}
-              className="bg-blue-900 hover:bg-blue-800 text-white font-medium px-5 py-2.5 rounded-lg text-sm transition-colors shadow-sm"
+          <div className="flex items-center gap-4">
+            <Switch currentLang={lang} setLang={setLang} />
+            <button
+              onClick={handleLogout}
+              className="bg-rose-50 text-rose-700 hover:bg-rose-100 font-semibold px-4 py-2 rounded-lg text-sm transition-colors border border-rose-200"
             >
-              📅 حجز جلسة إقراء جديدة
+              {t.logout}
             </button>
           </div>
+        </div>
+
+        {/* الإحصائيات */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-2">
+            <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">{t.currentProgram}</span>
+            <h3 className="text-lg font-bold text-slate-900">{metadata.program_id || 'تلقين'}</h3>
+            <p className="text-sm text-slate-500">{t.readingLevel}: {metadata.reading_level || 'مبتدئ'}</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-2">
+            <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">{t.memorizationState}</span>
+            <h3 className="text-lg font-bold text-slate-900">{metadata.memorization_state || '-'}</h3>
+            <p className="text-sm text-slate-500">{t.memorizedParts}: {metadata.memorized_parts || 0}</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-2">
+            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">{t.upcomingSessions}</span>
+            <h3 className="text-lg font-bold text-slate-900">{t.noSessions}</h3>
+          </div>
+        </div>
+
+        {/* حجز الجلسات */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <button 
+            onClick={() => alert(lang === 'ar' ? 'قريباً نافذة الحجز!' : 'በቅርቡ ይመጣል!')}
+            className="bg-blue-900 hover:bg-blue-800 text-white font-medium px-5 py-2.5 rounded-lg text-sm transition-colors shadow-sm"
+          >
+            📅 {t.bookSession}
+          </button>
         </div>
 
       </div>
